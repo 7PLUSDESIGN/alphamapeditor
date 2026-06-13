@@ -296,6 +296,7 @@ segSetup('meshTypeSeg', v=>{
   applyDisplacement();
 });
 
+// ดึงการอัปเดต UI และ Thumbnail ออกมาเป็นฟังก์ชันกลางเพื่อให้โหลดรูปเริ่มต้นเรียกใช้ได้ด้วย
 function handleImageProcessed(img, w, h) {
   srcImg = img; srcW = w; srcH = h;
   
@@ -362,7 +363,7 @@ function getExteriorBackgroundMask(data, w, h, threshold = 25) {
   }
   for (let y = 0; y < h; y++) {
     if (data[(y * w + 0) * 4] < threshold) { mask[y * w + 0] = 1; queue.push(0, y); }
-    if (data[(y * w + (w - 1)) * 4] < threshold) { mask[y * w + (w - 1)] = 1; queue.push(w - 1, y); }
+    if (data[(y * w + (w - 1)) * 4] < threshold) { mask[(y * w + (w - 1))] = 1; queue.push(w - 1, y); }
   }
   const dx = [1, -1, 0, 0]; const dy = [0, 0, 1, -1];
   let head = 0;
@@ -672,18 +673,19 @@ function animate(){
   three.renderer.render(three.scene, three.camera);
 }
 
-// ฟังก์ชันสำหรับดึงไฟล์ภาพเริ่มต้น alpha_map.png
+// ฟังก์ชันดึงรูปภาพพื้นฐานจากเซิร์ฟเวอร์มาคำนวณอัตโนมัติ
 function loadDefaultImage() {
   const img = new Image();
+  
+  // เปิดโหมด CORS เพื่อปลดล็อกระบบรักษาความปลอดภัย Canvas บราวเซอร์จะไม่บล็อกพิกเซล
   img.crossOrigin = "anonymous"; 
-  img.src = "alpha_map.png"; 
   
   img.onload = () => {
     handleImageProcessed(img, img.width, img.height);
   };
-  img.onerror = () => {
-    console.log("ไม่สามารถดึงภาพเริ่มต้นได้เนื่องจากข้อจำกัดของระบบเบราว์เซอร์ต้นทาง");
-  };
+  
+  // ระบุ Path ไปยังไฟล์ภาพที่อยู่ในโฟลเดอร์เดียวกันบนคลัง GitHub
+  img.src = "./alpha_map.png"; 
 }
 
 if(typeof THREE !== 'undefined') {
