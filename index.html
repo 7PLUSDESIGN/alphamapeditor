@@ -253,7 +253,6 @@ let channel = 'luminance';
 let currentMeshType = 'plane'; 
 const PROC_RES = 512; 
 
-// แยกการจำค่าเริ่มต้นของรูปทรง Plane และ Sphere ตามกำหนดใหม่
 const meshSettings = {
   plane: { disp: 5, seg: 256 },
   sphere: { disp: 10, seg: 512 }
@@ -287,7 +286,6 @@ segSetup('meshTypeSeg', v=>{
   currentMeshType = v; 
   $('meshLabel').textContent = `3D Displaced ${v}`;
   
-  // โหลดค่าความชัน (Displace) และความละเอียด (Grid Detail) ของแต่ละโมเดล
   $('dispScale').value = meshSettings[v].disp;
   $('dispScaleV').textContent = meshSettings[v].disp;
   
@@ -298,29 +296,50 @@ segSetup('meshTypeSeg', v=>{
   applyDisplacement();
 });
 
+function handleImageLoaded(img, width, height) {
+  srcImg = img; srcW = width; srcH = height;
+  
+  const sc = $('srcCanvas'); sc.width = 64; sc.height = 64;
+  const sctx = sc.getContext('2d');
+  sctx.fillStyle = "#000000"; sctx.fillRect(0,0,64,64);
+  
+  const maxDim = Math.max(srcW, srcH);
+  const nw = (srcW / maxDim) * 64;
+  const nh = (srcH / maxDim) * 64;
+  sctx.drawImage(img, (64-nw)/2, (64-nh)/2, nw, nh);
+
+  $('infoLabel').textContent = `${srcW}×${srcH}px`;
+  $('emptyState').style.display = 'none';
+  $('heroHint').style.display = 'block';
+  render();
+}
+
 function loadFile(f){
   if(!f) return;
   const url=URL.createObjectURL(f);
   const img=new Image();
   img.onload=()=>{
-    srcImg=img; srcW=img.width; srcH=img.height;
-    
-    const sc=$('srcCanvas'); sc.width=64; sc.height=64;
-    const sctx = sc.getContext('2d');
-    sctx.fillStyle = "#000000"; sctx.fillRect(0,0,64,64);
-    
-    const maxDim = Math.max(srcW, srcH);
-    const nw = (srcW / maxDim) * 64;
-    const nh = (srcH / maxDim) * 64;
-    sctx.drawImage(img, (64-nw)/2, (64-nh)/2, nw, nh);
-
-    $('infoLabel').textContent = `${srcW}×${srcH}px`;
-    $('emptyState').style.display='none';
-    $('heroHint').style.display='block';
-    render();
+    handleImageLoaded(img, img.width, img.height);
   };
   img.src=url;
 }
+
+// ฟังก์ชันสำหรับโหลดภาพเริ่มต้นชื่อ alpha_map.png ใน Repository เดียวกัน
+function loadDefaultImage() {
+  const img = new Image();
+  img.crossOrigin = "anonymous"; 
+  
+  // ⚠️ หากภาพจริงของคุณไม่ใช่ไฟล์ .png เช่นเป็น .jpg ให้แก้นามสกุลตรงนี้ให้ตรงกันนะครับ
+  img.src = "alpha_map.png"; 
+  
+  img.onload = () => {
+    handleImageLoaded(img, img.width, img.height);
+  };
+  img.onerror = () => {
+    console.log("ไม่พบไฟล์ภาพเริ่มต้น (alpha_map.png) บนเซิร์ฟเวอร์ หรือกำลังรันแบบ Local บนคอมพิวเตอร์");
+  };
+}
+
 $('fileIn').addEventListener('change', e=> loadFile(e.target.files[0]));
 $('dropZone').addEventListener('dragover',e=>{e.preventDefault();$('dropZone').style.background='rgba(255,255,255,0.03)'});
 $('dropZone').addEventListener('dragleave',()=>$('dropZone').style.background='');
@@ -360,7 +379,7 @@ function getExteriorBackgroundMask(data, w, h, threshold = 25) {
   }
   for (let y = 0; y < h; y++) {
     if (data[(y * w + 0) * 4] < threshold) { mask[y * w + 0] = 1; queue.push(0, y); }
-    if (data[(y * w + (w - 1)) * 4] < threshold) { mask[y * w + (w - 1)] = 1; queue.push(w - 1, y); }
+    if (data[(y * w + (w - 1)) * 4] < threshold) { mask[(y * w + (w - 1))] = 1; queue.push(w - 1, y); }
   }
   const dx = [1, -1, 0, 0]; const dy = [0, 0, 1, -1];
   let head = 0;
@@ -481,7 +500,6 @@ $('resetBtn').addEventListener('click',()=>{
   ['brightness','contrast'].forEach(id=>$(id+'V').textContent='0');
   $('gammaV').textContent='1.0'; $('blurV').textContent='0'; $('objectFadeV').textContent='0';
   
-  // รีเซ็ตค่าโมเดลกลับสู่เริ่มต้น (Plane)
   meshSettings.plane.disp = 5;
   meshSettings.plane.seg = 256;
   meshSettings.sphere.disp = 10;
@@ -511,14 +529,14 @@ let autoRotate = false, wireframe = false;
 $('dispScale').addEventListener('input', ()=>{ 
   const val = +$('dispScale').value;
   $('dispScaleV').textContent = val; 
-  meshSettings[currentMeshType].disp = val; // เซฟค่าความชันปัจจุบันลงโปรไฟล์รูปทรงที่เลือก
+  meshSettings[currentMeshType].disp = val; 
   applyDisplacement(); 
 });
 
 $('dispSeg').addEventListener('input', ()=>{ 
   const val = +$('dispSeg').value;
   $('dispSegV').textContent = val; 
-  meshSettings[currentMeshType].seg = val;  // เซฟค่า Grid ปัจจุบันลงโปรไฟล์รูปทรงที่เลือก
+  meshSettings[currentMeshType].seg = val;  
   rebuildGeometry(); 
   applyDisplacement(); 
 });
@@ -544,7 +562,6 @@ function initThree(){
   const dl = new THREE.DirectionalLight(0xffffff, 1.2); dl.position.set(2,3,4); three.scene.add(dl);
   const dl2 = new THREE.DirectionalLight(0x88aaff, 0.4); dl2.position.set(-2,-3,-4); three.scene.add(dl2);
 
-  // ค่าสไลเดอร์เริ่มต้นสำหรับ Plane ตอนโหลดเว็บครั้งแรก (Displace 5, Grid 256)
   $('dispScale').value = meshSettings[currentMeshType].disp;
   $('dispScaleV').textContent = meshSettings[currentMeshType].disp;
   $('dispSeg').value = meshSettings[currentMeshType].seg;
@@ -605,7 +622,6 @@ function applyDisplacement(){
   const pos = three.geom.attributes.position;
   const base = three.baseGeom;
   
-  // ใช้ค่าความนูนตามโปรไฟล์ปัจจุบัน
   const scale = (meshSettings[currentMeshType].disp)/100 * 0.5;
 
   const ctx = oc.getContext('2d');
@@ -673,10 +689,16 @@ function animate(){
   three.renderer.render(three.scene, three.camera);
 }
 
-if(typeof THREE !== 'undefined') initThree();
-else {
+if(typeof THREE !== 'undefined') {
+  initThree();
+  loadDefaultImage();
+} else {
   const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-  s.onload = initThree; document.head.appendChild(s);
+  s.onload = () => {
+    initThree();
+    loadDefaultImage();
+  };
+  document.head.appendChild(s);
 }
 </script>
 </body>
