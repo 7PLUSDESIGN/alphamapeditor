@@ -251,9 +251,8 @@ const $ = id => document.getElementById(id);
 let srcImg = null, srcW = 0, srcH = 0;
 let channel = 'luminance';
 let currentMeshType = 'sphere'; 
-const PROC_RES = 1024; 
+const PROC_RES = 1024; // ล็อคขนาดการประมวลผลและการแสดงผลทั้งหมดเป็น 1024x1024
 
-// ตัวแปรสำหรับจดจำชื่อไฟล์ที่ผู้ใช้อัปโหลดเข้ามา
 let uploadedFileName = "alpha"; 
 
 const meshSettings = {
@@ -320,7 +319,6 @@ function handleImageProcessed(img, w, h) {
 function loadFile(f){
   if(!f) return;
   
-  // แกะและบันทึกชื่อไฟล์ดั้งเดิมโดยตัดนามสกุลออก (.jpg, .png ฯลฯ)
   const lastDotIndex = f.name.lastIndexOf('.');
   if (lastDotIndex !== -1) {
     uploadedFileName = f.name.substring(0, lastDotIndex);
@@ -420,7 +418,7 @@ function computeExteriorDistanceField(data, w, h, threshold = 25) {
 
 function render(){
   if(!srcImg) return;
-  const size = PROC_RES;
+  const size = PROC_RES; // กำหนดขนาด 1024
   const tmp=document.createElement('canvas');
   tmp.width=size; tmp.height=size;
   const tc=tmp.getContext('2d');
@@ -456,7 +454,8 @@ function render(){
     grayId.data.set(blurred); tc.putImageData(grayId,0,0);
   }
 
-  const oc=$('outCanvas'); oc.width=size; oc.height=size;
+  const oc=$('outCanvas'); 
+  oc.width=size; oc.height=size; // ล็อคขนาดของ outCanvas ให้เป็น 1024x1024 แน่นอน
   oc.getContext('2d').drawImage(tmp,0,0);
 
   const fadeRange = +$('objectFade').value;
@@ -480,12 +479,13 @@ function render(){
     octx.putImageData(fid, 0, 0);
   }
 
-  $('regionPreview').width=size; $('regionPreview').height=size;
+  // ตัวแปรแสดงผลฝั่ง Fade Region ปรับเป็น 1024x1024 ตามเงื่อนไขด้วยเช่นกัน
+  $('regionPreview').width=size; 
+  $('regionPreview').height=size;
   $('regionPreview').getContext('2d').drawImage(oc,0,0);
   applyDisplacement();
 }
 
-// จุดแก้ไขหลัก: ดึงชื่อไฟล์เดิมมาประกอบเข้ากับคำว่า _bap ในการดาวน์โหลด
 $('exportPNG').addEventListener('click',()=>{
   const oc=$('outCanvas'); if(!oc.width) return;
   const a=document.createElement('a'); 
@@ -499,7 +499,7 @@ $('resetBtn').addEventListener('click',()=>{
   ['brightness','contrast'].forEach(id=>$(id+'V').textContent='0');
   $('gammaV').textContent='1.0'; $('blurV').textContent='0'; $('objectFadeV').textContent='0';
   
-  uploadedFileName = "alpha"; // รีเซ็ตชื่อกลับเป็นค่าเริ่มต้น
+  uploadedFileName = "alpha"; 
   
   meshSettings.plane.disp = 5;
   meshSettings.plane.seg = 256;
